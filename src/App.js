@@ -1,42 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import styled from 'styled-components';
 import './App.css';
 
+// 使用 Styled Components 创建样式化组件
+const LeftDiv = styled.div.attrs({
+  className: 'col-3 left-panel'
+})`
+  background-color: #7b8c7c;
+  min-height: 100vh;
+`;
+
+const RightDiv = styled.div.attrs({
+  className: 'col-9 right-panel'
+})`
+  background-color: #c9d8cd;
+`;
+
+
 function App() {
-  const [platform, setPlatform] = useState('');
-
-  useEffect(() => {
-    // 通过预加载脚本获取平台信息
-    if (window.electronAPI) {
-      setPlatform(window.electronAPI.getPlatform());
-    }
-  }, []);
-
-  const showMessage = async () => {
-    alert('Electron 工作正常!');
-    
-    // 通过预加载脚本显示对话框
-    if (window.electronAPI) {
-      try {
-        await window.electronAPI.showMessageBox({
-          type: 'info',
-          title: 'Electron 对话框',
-          message: '这是一个来自 Electron 的原生对话框!',
-          buttons: ['确定']
-        });
-      } catch (error) {
-        console.error('无法显示对话框:', error);
-      }
-    }
-  };
-
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Hello Electron + React!</h1>
-        <p>欢迎使用你的第一个 Electron React 应用程序</p>
-        {platform && <p>运行在: {platform}</p>}
-        <button onClick={showMessage}>点击测试</button>
-      </header>
+    <div className='App container-fulid px-0'>
+      <div className='row no-gutters'>
+        <LeftDiv>左侧</LeftDiv>
+        <RightDiv>右侧</RightDiv>
+      </div>
     </div>
   );
 }
