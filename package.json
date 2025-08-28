@@ -2,7 +2,7 @@
   "name": "electron-react-basic",
   "version": "0.1.0",
   "private": true,
-  "main": "main.js",
+  "main": "public/electron.js",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.8.0",
@@ -15,11 +15,15 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "concurrently \"npm run react-dev\" \"wait-on http://localhost:3000 && npm run electron\"",
-    "react-dev": "webpack serve --mode development",
+    "start": "cross-env BROWSER=none react-scripts start",
+    "build": "react-scripts build && node public/electron-build.js",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
     "electron": "electron .",
-    "build": "webpack --mode production",
-    "dist": "npm run build && electron-builder"
+    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron-pack": "electron-builder",
+    "dist": "npm run build && npm run electron-pack",
+    "preelectron-pack": "npm run build"
   },
   "eslintConfig": {
     "extends": [
@@ -39,6 +43,13 @@
       "last 1 safari version"
     ]
   },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.0.0",
+    "electron": "^37.4.0",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.4"
+  },
   "build": {
     "appId": "com.example.electron-react-app",
     "productName": "Electron React App",
@@ -47,24 +58,17 @@
     },
     "files": [
       "build/**/*",
-      "main.js",
-      "package.json"
+      "public/electron.js",
+      "node_modules/**/*"
     ],
-    "extends": null
-  },
-  "devDependencies": {
-    "@babel/core": "^7.28.3",
-    "@babel/preset-react": "^7.27.1",
-    "babel-loader": "^10.0.0",
-    "concurrently": "^9.2.1",
-    "css-loader": "^7.1.2",
-    "electron": "^37.4.0",
-    "electron-builder": "^26.0.12",
-    "html-webpack-plugin": "^5.6.4",
-    "style-loader": "^4.0.0",
-    "wait-on": "^8.0.4",
-    "webpack": "^5.101.3",
-    "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^5.2.2"
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }
