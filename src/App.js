@@ -2,6 +2,7 @@ import React from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import styled from 'styled-components';
 import './App.css';
+import SearchFile from './components/SearchFile';
 
 // 使用 Styled Components 创建样式化组件
 const LeftDiv = styled.div.attrs({
@@ -22,7 +23,9 @@ function App() {
   return (
     <div className='App container-fulid px-0'>
       <div className='row no-gutters'>
-        <LeftDiv>左侧</LeftDiv>
+        <LeftDiv>
+          <SearchFile title={"我的文档"} onSearch={(value)=>{console.log(value)}}></SearchFile>
+        </LeftDiv>
         <RightDiv>右侧</RightDiv>
       </div>
     </div>
