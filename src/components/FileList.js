@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileAlt, faEdit, faTrashAlt, faClose } from '@fortawesome/free-solid-svg-icons';
 import { z } from 'zod';
+import useKeyHandler from '../hooks/useKeyHandler';
 
 const GroupUI = styled.ul.attrs({
     className: 'list-group list-group-flush'
@@ -24,28 +25,21 @@ export default function FileList(props) {
     const { fileList, editFile, saveFile, deleteFile } = FileListSchema.parse(props);
     const [editItem, setEditItem] = useState(false);
     const [value, setValue] = useState('');
+    const enterKeyPressed = useKeyHandler(13);
+    const escKeyPressed = useKeyHandler(27);
     const closeFn = () => {
         setEditItem(false);
         setValue('');
     }
 
-    useEffect(() => {
-        const searchHandler = (key) => {
-            const { keyCode } = key;
-            if (keyCode === 13 && editItem) {
-                saveFile(editItem, value);
-                closeFn();
-            }
-            if (keyCode === 27 && editItem) {
-                closeFn();
-            }
-        }
-        document.addEventListener('keyup', searchHandler);
-
-        return () => {
-            document.removeEventListener('keyup', searchHandler);
-        }
-    });
+    // 在keydown重新渲染后，closeFn中setEditItem(false)就能够阻止多次执行saveFile
+    if (enterKeyPressed && editItem) {
+        saveFile(editItem, value);
+        closeFn();
+    }
+    if (escKeyPressed && editItem) {
+        closeFn();
+    }
 
     return (
         <GroupUI>

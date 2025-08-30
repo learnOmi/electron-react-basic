@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { z } from 'zod';
+import useKeyHandler from '../hooks/useKeyHandler';
 
 const SearchFilePropsSchema = z.object({
     title: z.string().default('文档'),
@@ -29,6 +30,8 @@ export default function SearchFile(props) {
     const [searchActive, setSearchActive] = useState(false);
     const [value, setValue] = useState('');
     const inputRef = useRef(null);
+    const enterKeyPressed = useKeyHandler(13);
+    const escKeyPressed = useKeyHandler(27);
 
     // 验证 props
     const { title, onSearch } = SearchFilePropsSchema.parse(props);
@@ -38,22 +41,19 @@ export default function SearchFile(props) {
         setValue('');
     };
 
+    // 由于改变state后的每次重新渲染都会执行函数，会导致添加多个listener，导致多次执行
+    // if (enterKeyPressed && searchActive) {
+    //     onSearch(value);
+    // }
     useEffect(() => {
-        const searchHandler = (key) => {
-            const { keyCode } = key;
-            if (keyCode === 13 && searchActive) {
-                onSearch(value);
-            }
-            if (keyCode === 27 && searchActive) {
-                closeSearch();
-            }
+        if (enterKeyPressed && searchActive) {
+            onSearch(value);
         }
-        document.addEventListener('keyup', searchHandler);
+    },[enterKeyPressed,onSearch,searchActive,value]);
 
-        return () => {
-            document.removeEventListener('keyup', searchHandler);
-        }
-    });
+    if (escKeyPressed && searchActive) {
+        closeSearch();
+    }
 
     useEffect(() => {
         if (searchActive) {
