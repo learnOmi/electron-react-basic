@@ -7,6 +7,8 @@ import FileList from './components/FileList';
 import ButtonItem from './components/ButtonItem';
 import { faFileImport, faPlus } from '@fortawesome/free-solid-svg-icons';
 import TabList from './components/TabList';
+import "easymde/dist/easymde.min.css";
+import SimpleMdeReact from 'react-simplemde-editor';
 
 const mockList = [
   { id: '1', title: 'file1', body: 'nihao', createTime: '132121' },
@@ -66,7 +68,8 @@ function App() {
           </div>
         </LeftDiv>
         <RightDiv>
-          <TabList files={mockList} activeItem='1' unSaveItems={['1']} clickItem={(id)=>{console.log(id)}} closeItem={(id)=>{console.log(id)}}></TabList>
+          <TabList files={mockList} activeItem='1' unSaveItems={['1']} clickItem={(id) => { console.log(id) }} closeItem={(id) => { console.log(id) }}></TabList>
+          <SimpleMdeReact id='cutome-id' onChange={(value) => { console.log(value) }} value={mockList[0].body} options={{ autofocus: true, spellChecker: false, minHeight: '500px' }} />
         </RightDiv>
       </div>
     </div>
