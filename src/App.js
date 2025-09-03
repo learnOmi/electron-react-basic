@@ -9,6 +9,8 @@ import { faFileImport, faPlus } from '@fortawesome/free-solid-svg-icons';
 import TabList from './components/TabList';
 import "easymde/dist/easymde.min.css";
 import SimpleMdeReact from 'react-simplemde-editor';
+import { id } from 'zod/locales';
+import { file } from 'zod';
 
 const mockList = [
   { id: '1', title: 'file1', body: 'nihao', createTime: '132121' },
@@ -70,13 +72,45 @@ function App() {
   const openFiles = files.filter(item => openIds.includes(item.id));
   // 正编辑的文件信息
   const activeFile = files.find(item => item.id === activeId);
+  // 打开编辑页
+  const openItem = (id) => {
+    setActiveId(id);
+    if(!openIds.includes(id)) setOpenIds([...openIds, id]);
+  }
+  // 更换Tab项
+  const changeItem = (id)=>{
+    setActiveId(id);
+  }
+  // 关闭Tab项
+  const closeFile = (id) => {
+    const resIds = openIds.filter(i => i !== id)
+    setOpenIds(resIds);
+    if(resIds.length>0){
+      setActiveId(resIds[0]);
+    }else{
+      setActiveId('');
+    }
+  }
+  // 编辑文件
+  const changeFile = (id, newValue) => {
+    if(!unSaveIds.includes(id)){
+      setUnSaveIds([...unSaveIds, id]);
+    }
+    const newFiles = files.map(file => {
+      if(file.id === id){
+        file.body = newValue;
+      }
+      return file;
+    });
+    setFiles(newFiles);
+  }
 
   return (
     <div className='App container-fulid px-0'>
       <div className='row no-gutters'>
         <LeftDiv>
           <SearchFile title={"我的文档"} onSearch={(value) => { console.log(value) }}></SearchFile>
-          <FileList fileList={files} editFile={(id) => { console.log(id) }} saveFile={(id, value) => { console.log(id, value) }} deleteFile={(id) => { console.log(id) }}></FileList>
+          <FileList fileList={files} editFile={openItem} saveFile={(id, value) => { console.log(id, value) }} deleteFile={(id) => { console.log(id) }}></FileList>
           <div className='btn_list'>
             <ButtonItem title={'新建'} icon={faPlus} />
             <ButtonItem title={'导入'} icon={faFileImport} />
@@ -86,8 +120,8 @@ function App() {
           {
             activeFile &&
             <>
-              <TabList files={openFiles} activeItem={activeId} unSaveItems={unSaveIds} clickItem={(id) => { console.log(id) }} closeItem={(id) => { console.log(id) }}></TabList>
-              <SimpleMdeReact id='cutome-id' onChange={(value) => { console.log(value) }} value={activeFile.body} options={{ autofocus: true, spellChecker: false, minHeight: '500px' }} />
+              <TabList files={openFiles} activeItem={activeId} unSaveItems={unSaveIds} clickItem={changeItem} closeItem={closeFile}></TabList>
+              <SimpleMdeReact key={activeFile && activeFile.id} onChange={(value)=>changeFile(activeFile.id, value)} value={activeFile.body} options={{ autofocus: true, spellChecker: false, minHeight: '500px' }} />
             </>
           }
           {
