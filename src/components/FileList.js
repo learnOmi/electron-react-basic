@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileAlt, faEdit, faTrashAlt, faClose } from '@fortawesome/free-solid-svg-icons';
-import { file, z } from 'zod';
+import { z } from 'zod';
 import useKeyHandler from '../hooks/useKeyHandler';
 
 const GroupUI = styled.ul.attrs({
@@ -70,6 +70,14 @@ export default function FileList(props) {
         }
     }, [fileList, editItem]);
 
+    useEffect(() => {
+        // 点击编辑时检查删除新建的文件信息
+        const newFile = fileList.find(file => file.isNew);
+        if(newFile && newFile.id !== editItem){
+            deleteFile(newFile.id);
+        }
+    });
+
     return (
         <GroupUI>
             {
@@ -85,7 +93,7 @@ export default function FileList(props) {
                         return (
                             <li key={item.id} className='list-group-item d-flex align-items-center'>
                                 <span className='mr-2'><FontAwesomeIcon icon={faFileAlt}></FontAwesomeIcon></span>
-                                <span className='col-8' onClick={() => { editFile(item.id) }}>{item.title}</span>
+                                <span className='col-8' onClick={() => { editFile(item.id); closeFn() }}>{item.title}</span>
                                 <span className='col-2' onClick={() => { setEditItem(item.id) }}><FontAwesomeIcon icon={faEdit}></FontAwesomeIcon></span>
                                 <span className='col-2' onClick={() => { deleteFile(item.id) }}><FontAwesomeIcon icon={faTrashAlt}></FontAwesomeIcon></span>
                             </li>

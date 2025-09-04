@@ -87,9 +87,11 @@ function App() {
   const closeFile = (id) => {
     const resIds = openIds.filter(i => i !== id)
     setOpenIds(resIds);
-    if (resIds.length > 0) {
+    if (resIds.length > 0 && activeId === id) {
       setActiveId(resIds[0]);
-    } else {
+    }else if(resIds.length > 0 && activeId !== id){
+      setActiveId(activeId);
+    }else {
       setActiveId('');
     }
   }
@@ -132,17 +134,20 @@ function App() {
   }
   // 新建文件信息
   const createFile = () => {
-    const newId = v4();
-    const newFile = {
-      isNew: true,
-      id: newId,
-      title: '',
-      body: '## 初始化内容',
-      createTime: new Date().getTime()
-    };
+    // 检查是否已存在新建信息
+    if (!files.find(file => file.isNew)) {
+      const newId = v4();
+      const newFile = {
+        isNew: true,
+        id: newId,
+        title: '',
+        body: '## 初始化内容',
+        createTime: new Date().getTime()
+      };
 
-    setFiles([...files, newFile]);
-  }
+      setFiles([...files, newFile]);
+    }
+  } 
 
   return (
     <div className='App container-fulid px-0'>
