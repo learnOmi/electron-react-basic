@@ -9,8 +9,7 @@ import { faFileImport, faPlus } from '@fortawesome/free-solid-svg-icons';
 import TabList from './components/TabList';
 import "easymde/dist/easymde.min.css";
 import SimpleMdeReact from 'react-simplemde-editor';
-import { id } from 'zod/locales';
-import { file } from 'zod';
+import { v4 } from 'uuid';
 
 const mockList = [
   { id: '1', title: 'file1', body: 'nihao', createTime: '132121' },
@@ -70,7 +69,7 @@ function App() {
   const [searchFiles, setSearchFiles] = useState([]); // 搜索文件信息
 
   // 应该显示的文件信息
-  const fileList = (searchFiles.length > 0)? searchFiles : files;
+  const fileList = (searchFiles.length > 0) ? searchFiles : files;
   // 已打开的所有文件信息
   const openFiles = files.filter(item => openIds.includes(item.id));
   // 正编辑的文件信息
@@ -78,29 +77,29 @@ function App() {
   // 打开编辑页
   const openItem = (id) => {
     setActiveId(id);
-    if(!openIds.includes(id)) setOpenIds([...openIds, id]);
+    if (!openIds.includes(id)) setOpenIds([...openIds, id]);
   }
   // 更换Tab项
-  const changeItem = (id)=>{
+  const changeItem = (id) => {
     setActiveId(id);
   }
   // 关闭Tab项
   const closeFile = (id) => {
     const resIds = openIds.filter(i => i !== id)
     setOpenIds(resIds);
-    if(resIds.length>0){
+    if (resIds.length > 0) {
       setActiveId(resIds[0]);
-    }else{
+    } else {
       setActiveId('');
     }
   }
   // 编辑文件
   const changeFile = (id, newValue) => {
-    if(!unSaveIds.includes(id)){
+    if (!unSaveIds.includes(id)) {
       setUnSaveIds([...unSaveIds, id]);
     }
     const newFiles = files.map(file => {
-      if(file.id === id){
+      if (file.id === id) {
         file.body = newValue;
       }
       return file;
@@ -112,7 +111,7 @@ function App() {
     const newFiles = files.filter(file => file.id !== id);
     setFiles(newFiles);
 
-    if(openIds.includes(id))  closeFile(id);
+    if (openIds.includes(id)) closeFile(id);
   }
   // 搜索文件
   const searchFile = (keyword) => {
@@ -122,11 +121,27 @@ function App() {
   // 编辑文件名
   const reName = (id, value) => {
     const newFiles = files.map(file => {
-      if(file.id === id) file.title = value;
+      if (file.id === id) {
+        file.title = value;
+        file.isNew = false;
+      }
       return file;
     });
 
     setFiles(newFiles);
+  }
+  // 新建文件信息
+  const createFile = () => {
+    const newId = v4();
+    const newFile = {
+      isNew: true,
+      id: newId,
+      title: '',
+      body: '## 初始化内容',
+      createTime: new Date().getTime()
+    };
+
+    setFiles([...files, newFile]);
   }
 
   return (
@@ -136,7 +151,7 @@ function App() {
           <SearchFile title={"我的文档"} onSearch={searchFile}></SearchFile>
           <FileList fileList={fileList} editFile={openItem} saveFile={(id, value) => { reName(id, value) }} deleteFile={deleteFile}></FileList>
           <div className='btn_list'>
-            <ButtonItem title={'新建'} icon={faPlus} />
+            <ButtonItem title={'新建'} icon={faPlus} btnClick={createFile} />
             <ButtonItem title={'导入'} icon={faFileImport} />
           </div>
         </LeftDiv>
@@ -145,7 +160,7 @@ function App() {
             activeFile &&
             <>
               <TabList files={openFiles} activeItem={activeId} unSaveItems={unSaveIds} clickItem={changeItem} closeItem={closeFile}></TabList>
-              <SimpleMdeReact key={activeFile && activeFile.id} onChange={(value)=>changeFile(activeFile.id, value)} value={activeFile.body} options={{ autofocus: true, spellChecker: false, minHeight: '500px' }} />
+              <SimpleMdeReact key={activeFile && activeFile.id} onChange={(value) => changeFile(activeFile.id, value)} value={activeFile.body} options={{ autofocus: true, spellChecker: false, minHeight: '500px' }} />
             </>
           }
           {

@@ -9,7 +9,7 @@ const BtnP = styled.p.attrs({
 
 export default function ButtonItem({icon, title, btnClick}) {
   return (
-    <BtnP>
+    <BtnP onClick={btnClick}>
         <FontAwesomeIcon icon={icon}></FontAwesomeIcon>
         <span className="ml-2">{title}</span>
     </BtnP>
