@@ -10,6 +10,7 @@ import TabList from './components/TabList';
 import "easymde/dist/easymde.min.css";
 import SimpleMdeReact from 'react-simplemde-editor';
 import { v4 } from 'uuid';
+import { Arr2Map, Map2Arr } from './utils/helper';
 
 const mockList = [
   { id: '1', title: 'file1', body: 'nihao', createTime: '132121' },
@@ -62,18 +63,21 @@ const RightDiv = styled.div.attrs({
 
 
 function App() {
-  const [files, setFiles] = useState(mockList);  //代表所有的文件信息
+  const [files, setFiles] = useState(Arr2Map(mockList));  //代表所有的文件信息
   const [activeId, setActiveId] = useState(''); // 当前正在编辑的文件id
   const [openIds, setOpenIds] = useState([]); // 当前打开的所有文件id
   const [unSaveIds, setUnSaveIds] = useState([]); // 当前未保存的所有文件id
   const [searchFiles, setSearchFiles] = useState([]); // 搜索文件信息
+  const [isNew, setIsNew] = useState(false);
 
   // 应该显示的文件信息
-  const fileList = (searchFiles.length > 0) ? searchFiles : files;
+  const fileList = (searchFiles.length > 0) && !isNew ? searchFiles : Map2Arr(files);
   // 已打开的所有文件信息
-  const openFiles = files.filter(item => openIds.includes(item.id));
+  // const openFiles = files.filter(item => openIds.includes(item.id));
+  const openFiles = openIds.map(id => files[id]);
   // 正编辑的文件信息
-  const activeFile = files.find(item => item.id === activeId);
+  // const activeFile = files.find(item => item.id === activeId);
+  const activeFile = files[activeId];
   // 打开编辑页
   const openItem = (id) => {
     setActiveId(id);
@@ -89,9 +93,9 @@ function App() {
     setOpenIds(resIds);
     if (resIds.length > 0 && activeId === id) {
       setActiveId(resIds[0]);
-    }else if(resIds.length > 0 && activeId !== id){
+    } else if (resIds.length > 0 && activeId !== id) {
       setActiveId(activeId);
-    }else {
+    } else {
       setActiveId('');
     }
   }
@@ -100,42 +104,60 @@ function App() {
     if (!unSaveIds.includes(id)) {
       setUnSaveIds([...unSaveIds, id]);
     }
-    const newFiles = files.map(file => {
-      if (file.id === id) {
-        file.body = newValue;
-      }
-      return file;
-    });
-    setFiles(newFiles);
+    // const newFiles = files.map(file => {
+    //   if (file.id === id) {
+    //     file.body = newValue;
+    //   }
+    //   return file;
+    // });
+    // setFiles(newFiles);
+    const newFile = { ...files[id], body: newValue };
+    setFiles({ ...files, [id]: newFile });
   }
   // 删除文件
   const deleteFile = (id) => {
-    const newFiles = files.filter(file => file.id !== id);
+    // const newFiles = files.filter(file => file.id !== id);
+    // 改变对原来files对象的引用，引发React更新
+    const newFiles = { ...files };
+    delete newFiles[id];
     setFiles(newFiles);
 
     if (openIds.includes(id)) closeFile(id);
   }
   // 搜索文件
   const searchFile = (keyword) => {
-    const newFiles = files.filter(file => file.title.includes(keyword));
-    setSearchFiles(newFiles);
+    if (keyword.trim() !== '') {
+      // 只在关键词有实际内容时才进行搜索
+      const filteredFiles = Map2Arr(files).filter(file =>
+        file.title && file.title.includes(keyword)
+      );
+
+      // 只有当搜索结果不同时才更新状态
+      if (JSON.stringify(filteredFiles) !== JSON.stringify(searchFiles)) {
+        setSearchFiles(filteredFiles);
+      }
+    }else{
+      setSearchFiles([]);
+    }
   }
   // 编辑文件名
   const reName = (id, value) => {
-    const newFiles = files.map(file => {
-      if (file.id === id) {
-        file.title = value;
-        file.isNew = false;
-      }
-      return file;
-    });
+    // const newFiles = files.map(file => {
+    //   if (file.id === id) {
+    //     file.title = value;
+    //     file.isNew = false;
+    //   }
+    //   return file;
+    // });
 
-    setFiles(newFiles);
+    // setFiles(newFiles);
+    const newFile = { ...files[id], title: value, isNew: false };
+    setFiles({ ...files, [id]: newFile });
   }
   // 新建文件信息
   const createFile = () => {
     // 检查是否已存在新建信息
-    if (!files.find(file => file.isNew)) {
+    if (!isNew) {
       const newId = v4();
       const newFile = {
         isNew: true,
@@ -145,16 +167,24 @@ function App() {
         createTime: new Date().getTime()
       };
 
-      setFiles([...files, newFile]);
+      setIsNew(true);
+      setFiles({ ...files, [newId]: newFile });
     }
-  } 
+  }
+  const clearState = (isDel) => {
+    if (isNew && isDel) {
+      const newFile = Map2Arr(files).find(file => file.isNew);
+      if (newFile) deleteFile(newFile.id);
+    }
+    setIsNew(false);
+  }
 
   return (
     <div className='App container-fulid px-0'>
       <div className='row no-gutters'>
         <LeftDiv>
-          <SearchFile title={"我的文档"} onSearch={searchFile}></SearchFile>
-          <FileList fileList={fileList} editFile={openItem} saveFile={(id, value) => { reName(id, value) }} deleteFile={deleteFile}></FileList>
+          <SearchFile title={"我的文档"} onSearch={searchFile} clearState={clearState}></SearchFile>
+          <FileList fileList={fileList} editFile={openItem} saveFile={(id, value) => { reName(id, value) }} deleteFile={deleteFile} clearState={clearState}></FileList>
           <div className='btn_list'>
             <ButtonItem title={'新建'} icon={faPlus} btnClick={createFile} />
             <ButtonItem title={'导入'} icon={faFileImport} />

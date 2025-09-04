@@ -7,7 +7,8 @@ import useKeyHandler from '../hooks/useKeyHandler';
 
 const SearchFilePropsSchema = z.object({
     title: z.string().default('文档'),
-    onSearch: z.function()
+    onSearch: z.function(),
+    clearState: z.function()
 });
 
 const Searchdiv = styled.div.attrs({
@@ -34,7 +35,7 @@ export default function SearchFile(props) {
     const escKeyPressed = useKeyHandler(27);
 
     // 验证 props
-    const { title, onSearch } = SearchFilePropsSchema.parse(props);
+    const { title, onSearch, clearState } = SearchFilePropsSchema.parse(props);
 
     const closeSearch = () => {
         setSearchActive(false);
@@ -42,7 +43,14 @@ export default function SearchFile(props) {
 
         // 重置搜索关键字
         onSearch('');
+        // 确保清除状态
+        clearState(false);
     };
+
+    const openSearch = () => {
+        setSearchActive(true);
+        clearState(true);
+    }
 
     // 由于改变state后的每次重新渲染都会执行函数，会导致添加多个listener，导致多次执行
     // if (enterKeyPressed && searchActive) {
@@ -52,11 +60,14 @@ export default function SearchFile(props) {
         if (enterKeyPressed && searchActive) {
             onSearch(value);
         }
-    },[enterKeyPressed,onSearch,searchActive,value]);
+        if (escKeyPressed && searchActive) {
+            closeSearch();
+        }
+    });
 
-    if (escKeyPressed && searchActive) {
-        closeSearch();
-    }
+    // if (escKeyPressed && searchActive) {
+    //     closeSearch();
+    // }
 
     useEffect(() => {
         if (searchActive) {
@@ -71,7 +82,7 @@ export default function SearchFile(props) {
                 <>
                     <Searchdiv>
                         <span>{title}</span>
-                        <span onClick={() => setSearchActive(true)}>
+                        <span onClick={openSearch}>
                             <FontAwesomeIcon icon={faSearch} color="#fff" />
                         </span>
                     </Searchdiv>

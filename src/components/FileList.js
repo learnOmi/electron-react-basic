@@ -19,22 +19,24 @@ const FileListSchema = z.object({
     editFile: z.function(),
     saveFile: z.function(),
     deleteFile: z.function(),
+    clearState: z.function()
 });
 
 export default function FileList(props) {
-    const { fileList, editFile, saveFile, deleteFile } = FileListSchema.parse(props);
+    const { fileList, editFile, saveFile, deleteFile, clearState } = FileListSchema.parse(props);
     const [editItem, setEditItem] = useState(false);
     const [value, setValue] = useState('');
     const enterKeyPressed = useKeyHandler(13);
     const escKeyPressed = useKeyHandler(27);
-    const closeFn = () => {
+    const closeFn = (isEsc = false) => {
         setEditItem(false);
         setValue('');
-
+        
         const currentFile = fileList.find(file => file.id === editItem);
-        if (currentFile && currentFile.isNew) {
+        if (currentFile && currentFile.isNew && isEsc) {
             deleteFile(editItem);
         }
+        clearState(false);
     }
 
     // 在keydown重新渲染后，closeFn中setEditItem(false)就能够阻止多次执行saveFile
@@ -49,34 +51,35 @@ export default function FileList(props) {
     // 使用 useEffect 处理按键事件; 不然会导致  
     // Cannot update a component (`App`) while rendering a different component (`FileList`)
     useEffect(() => {
-        if (enterKeyPressed && editItem) {
+        // 避免搜索时按键冲突
+        let flag = fileList.find(file => file.id === editItem);
+        if (enterKeyPressed && editItem && flag) {
             saveFile(editItem, value);
             closeFn(false);
         }
-        if (escKeyPressed && editItem) {
+        if (escKeyPressed && editItem && flag) {
             closeFn(true);
         }
     });
-    
+
     useEffect(() => {
-        // 只在没有正在编辑的项目时处理新建文件
-        if (!editItem) {
-            const newFiles = fileList.filter(file => file.isNew);
-            if (newFiles.length > 0) {
-                const newFile = newFiles[0];
+        // 处理新建文件的逻辑
+        const newFiles = fileList.filter(file => file.isNew);
+
+        if (newFiles.length > 0) {
+            const newFile = newFiles[0];
+
+            // 如果没有正在编辑的项目，则开始编辑新建文件
+            if (!editItem || (newFile.isNew && editItem !== newFile.id)) {
                 setEditItem(newFile.id);
                 setValue(newFile.title || '');
             }
+            // 如果有编辑项但不是这个新建文件，则删除新建文件
+            else if (newFile.id !== editItem && !editFile) {
+                deleteFile(newFile.id);
+            }
         }
-    }, [fileList, editItem]);
-
-    useEffect(() => {
-        // 点击编辑时检查删除新建的文件信息
-        const newFile = fileList.find(file => file.isNew);
-        if(newFile && newFile.id !== editItem){
-            deleteFile(newFile.id);
-        }
-    });
+    }, [fileList, editItem, editFile, deleteFile]); // 添加 editFile 作为依赖
 
     return (
         <GroupUI>
