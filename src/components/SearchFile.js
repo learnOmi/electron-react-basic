@@ -39,6 +39,9 @@ export default function SearchFile(props) {
     const closeSearch = () => {
         setSearchActive(false);
         setValue('');
+
+        // 重置搜索关键字
+        onSearch('');
     };
 
     // 由于改变state后的每次重新渲染都会执行函数，会导致添加多个listener，导致多次执行

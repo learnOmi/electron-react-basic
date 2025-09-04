@@ -67,7 +67,10 @@ function App() {
   const [activeId, setActiveId] = useState(''); // 当前正在编辑的文件id
   const [openIds, setOpenIds] = useState([]); // 当前打开的所有文件id
   const [unSaveIds, setUnSaveIds] = useState([]); // 当前未保存的所有文件id
+  const [searchFiles, setSearchFiles] = useState([]); // 搜索文件信息
 
+  // 应该显示的文件信息
+  const fileList = (searchFiles.length > 0)? searchFiles : files;
   // 已打开的所有文件信息
   const openFiles = files.filter(item => openIds.includes(item.id));
   // 正编辑的文件信息
@@ -104,13 +107,34 @@ function App() {
     });
     setFiles(newFiles);
   }
+  // 删除文件
+  const deleteFile = (id) => {
+    const newFiles = files.filter(file => file.id !== id);
+    setFiles(newFiles);
+
+    if(openIds.includes(id))  closeFile(id);
+  }
+  // 搜索文件
+  const searchFile = (keyword) => {
+    const newFiles = files.filter(file => file.title.includes(keyword));
+    setSearchFiles(newFiles);
+  }
+  // 编辑文件名
+  const reName = (id, value) => {
+    const newFiles = files.map(file => {
+      if(file.id === id) file.title = value;
+      return file;
+    });
+
+    setFiles(newFiles);
+  }
 
   return (
     <div className='App container-fulid px-0'>
       <div className='row no-gutters'>
         <LeftDiv>
-          <SearchFile title={"我的文档"} onSearch={(value) => { console.log(value) }}></SearchFile>
-          <FileList fileList={files} editFile={openItem} saveFile={(id, value) => { console.log(id, value) }} deleteFile={(id) => { console.log(id) }}></FileList>
+          <SearchFile title={"我的文档"} onSearch={searchFile}></SearchFile>
+          <FileList fileList={fileList} editFile={openItem} saveFile={(id, value) => { reName(id, value) }} deleteFile={deleteFile}></FileList>
           <div className='btn_list'>
             <ButtonItem title={'新建'} icon={faPlus} />
             <ButtonItem title={'导入'} icon={faFileImport} />
