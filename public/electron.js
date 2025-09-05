@@ -2,6 +2,10 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
+const Store = require('electron-store');
+// 注意store版本区别
+const store = new Store();
+
 
 let mainWindow;
 
@@ -70,6 +74,23 @@ app.whenReady().then(() => {
 
   ipcMain.handle('delete-file', (event, path) => {
     fs.unlinkSync(path);
+  });
+
+  // 存储操作处理器
+  ipcMain.handle('store-set', (event, key, value) => {
+    store.set(key, value);
+  });
+
+  ipcMain.handle('store-get', (event, key) => {
+    return store.get(key);
+  });
+
+  ipcMain.handle('store-delete', (event, key) => {
+    store.delete(key);
+  });
+
+  ipcMain.handle('store-clear', () => {
+    store.clear();
   });
 
   createWindow();

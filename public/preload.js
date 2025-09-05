@@ -11,4 +11,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeFile: (pathD, content) => ipcRenderer.invoke('write-file', pathD, content),
   renameFile: (pathD, newPath) => ipcRenderer.invoke('rename-file', pathD, newPath),
   deleteFile: (pathD) => ipcRenderer.invoke('delete-file', pathD),
+  readStore: (key) => ipcRenderer.invoke('store-get', key),
+  writeStore: (key, value) => ipcRenderer.invoke('store-set', key, value),
+  deleteStore: (key) => ipcRenderer.invoke('store-delete', key),
+  clearStore: () => ipcRenderer.invoke('store-clear'),
 });

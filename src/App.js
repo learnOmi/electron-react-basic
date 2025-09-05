@@ -11,12 +11,14 @@ import TabList from './components/TabList';
 import "easymde/dist/easymde.min.css";
 import SimpleMdeReact from 'react-simplemde-editor';
 import { v4 } from 'uuid';
-import { Arr2Map, Map2Arr, getDocumentsPath, writeFile, pathJoin, renameFile, deleteFile as deleteLFile } from './utils/helper';
+import { Arr2Map, Map2Arr, getDocumentsPath, writeFile, pathJoin, renameFile, deleteFile as deleteLFile, readFile } from './utils/helper';
+import { setFiles2store, getFilesFromStore, deleteFileFromStore } from './utils/electronStore';
 
-const mockList = [
-  { id: '1', title: 'file1', body: 'nihao', createTime: '132121' },
-  { id: '2', title: 'file2', body: 'nihao2', createTime: '132121' }
-]
+
+// const mockList = [
+//   { id: '1', title: 'file1', body: 'nihao', createTime: '132121' },
+//   { id: '2', title: 'file2', body: 'nihao2', createTime: '132121' }
+// ]
 
 // 使用 Styled Components 创建样式化组件
 const LeftDiv = styled.div.attrs({
@@ -72,7 +74,9 @@ function App() {
     getDocumentsPath("documents").then(path => {
       dispatch({ type: 'SET_SAVE_PATH', payload: path });
     });
-    dispatch({ type: 'SET_FILES', payload: Arr2Map(mockList) });
+    getFilesFromStore().then(files => {
+      dispatch({ type: 'SET_FILES', payload: files || {} });
+    });
   }, [dispatch]);
 
   // 应该显示的文件信息
@@ -88,7 +92,33 @@ function App() {
   // 打开编辑页
   const openItem = (id) => {
     dispatch({ type: 'SET_ACTIVE_ID', payload: id });
-    if (!openIds.includes(id)) dispatch({ type: 'SET_OPEN_IDS', payload: [...openIds, id] });
+    // 根据path读取文件内容
+    const file = files[id];
+    if (!file.isLoaded) {
+      readFile(file.path)
+        .then(data => {
+          const newFile = { ...file, body: data, isLoaded: true };
+          dispatch({ type: 'SET_FILES', payload: { ...files, [id]: newFile } });
+          if (!openIds.includes(id)) dispatch({ type: 'SET_OPEN_IDS', payload: [...openIds, id] });
+        })
+        .catch(error => {
+          console.error('文件读取失败:', error);
+          // 从 electron-store 中删除无效的文件信息
+          deleteFileFromStore(id);
+          // 更新本地状态，移除无效文件
+          const newFiles = { ...files };
+          delete newFiles[id];
+          dispatch({ type: 'SET_FILES', payload: newFiles });
+          // 如果当前打开的文件是无效文件，关闭其标签页
+          if (openIds.includes(id)) {
+            const resIds = openIds.filter(i => i !== id);
+            dispatch({ type: 'SET_OPEN_IDS', payload: resIds });
+            if (activeId === id) {
+              dispatch({ type: 'SET_ACTIVE_ID', payload: resIds[0] || '' });
+            }
+          }
+        });
+    }
   }
   // 更换Tab项
   const changeItem = (id) => {
@@ -116,14 +146,25 @@ function App() {
   }
   // 删除文件
   const deleteFile = async (id) => {
-    const path = await pathJoin(savePath, `${files[id].title}.md`);
-    deleteLFile(path).then(() => {
-      const newFiles = { ...files };
-      delete newFiles[id];
-      dispatch({ type: 'SET_FILES', payload: newFiles });
+    const file = files[id];
+    if (!file.isNew) {
+      const path = await pathJoin(savePath, `${files[id].title}.md`);
+      deleteLFile(path).then(() => {
+        const newFiles = { ...files };
+        delete newFiles[id];
+        dispatch({ type: 'SET_FILES', payload: newFiles });
+        setFiles2store(newFiles);
 
-      if (openIds.includes(id)) closeFile(id);
-    });
+        if (openIds.includes(id)) closeFile(id);
+      });
+    }
+    const newFiles = { ...files };
+    delete newFiles[id];
+    dispatch({ type: 'SET_FILES', payload: newFiles });
+    setFiles2store(newFiles);
+
+    if (openIds.includes(id)) closeFile(id);
+
   }
   // 搜索文件
   const searchFile = (keyword) => {
@@ -150,16 +191,16 @@ function App() {
         value += "_copy";
       }
 
-      const newFile = { ...files[id], title: value, isNew: false };
+      const newPath = await pathJoin(savePath, `${value}.md`);
+      const newFile = { ...files[id], title: value, isNew: false, path: newPath };
+      const newFiles = { ...files, [id]: newFile };
 
       if (isCreateNew) {
         // 创建新文件
-        const filePath = await pathJoin(savePath, `${value}.md`);
-        await writeFile(filePath, newFile.body);
+        await writeFile(newPath, newFile.body);
       } else {
         // 重命名现有文件
         const oldPath = await pathJoin(savePath, `${files[id].title}.md`);
-        const newPath = await pathJoin(savePath, `${value}.md`);
 
         // 只有当文件名改变时才执行重命名
         if (oldPath !== newPath && newPath) {
@@ -168,7 +209,8 @@ function App() {
       }
 
       // 统一更新状态
-      dispatch({ type: 'SET_FILES', payload: { ...files, [id]: newFile } });
+      dispatch({ type: 'SET_FILES', payload: newFiles});
+      setFiles2store(newFiles);
 
     } catch (error) {
       console.error('保存文件失败:', error);
@@ -201,7 +243,9 @@ function App() {
     dispatch({ type: 'SET_IS_NEW', payload: false });
   }
 
+  // 保存正在编辑的文件
   const saveCurrentFiles = async () => {
+    if(!activeFile) return;
     const path = await pathJoin(savePath, `${activeFile.title}.md`);
     writeFile(path, activeFile.body).then(() => {
       dispatch({
