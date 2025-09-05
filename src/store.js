@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 
 const initialState = {
+  savePath: '',
   files: {},
   activeId: '',
   openIds: [],
@@ -11,6 +12,8 @@ const initialState = {
 
 const fileReducer = (state = initialState, action) => {
   switch (action.type) {
+    case 'SET_SAVE_PATH':
+      return { ...state, savePath: action.payload };
     case 'SET_FILES':
       return { ...state, files: action.payload };
     case 'SET_ACTIVE_ID':

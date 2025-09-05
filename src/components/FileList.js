@@ -54,7 +54,7 @@ export default function FileList(props) {
         // 避免搜索时按键冲突
         let flag = fileList.find(file => file.id === editItem);
         if (enterKeyPressed && editItem && flag) {
-            saveFile(editItem, value);
+            saveFile(editItem, value, flag.isNew);
             closeFn(false);
         }
         if (escKeyPressed && editItem && flag) {
