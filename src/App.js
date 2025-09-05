@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import styled from 'styled-components';
 import './App.css';
@@ -63,12 +64,13 @@ const RightDiv = styled.div.attrs({
 
 
 function App() {
-  const [files, setFiles] = useState(Arr2Map(mockList));  //代表所有的文件信息
-  const [activeId, setActiveId] = useState(''); // 当前正在编辑的文件id
-  const [openIds, setOpenIds] = useState([]); // 当前打开的所有文件id
-  const [unSaveIds, setUnSaveIds] = useState([]); // 当前未保存的所有文件id
-  const [searchFiles, setSearchFiles] = useState([]); // 搜索文件信息
-  const [isNew, setIsNew] = useState(false);
+  const dispatch = useDispatch();
+  const { files, activeId, openIds, unSaveIds, searchFiles, isNew } = useSelector((state) => state.file);
+  
+  // 初始化状态
+  React.useEffect(() => {
+    dispatch({ type: 'SET_FILES', payload: Arr2Map(mockList) });
+  }, [dispatch]);
 
   // 应该显示的文件信息
   const fileList = (searchFiles.length > 0) && !isNew ? searchFiles : Map2Arr(files);
@@ -80,47 +82,38 @@ function App() {
   const activeFile = files[activeId];
   // 打开编辑页
   const openItem = (id) => {
-    setActiveId(id);
-    if (!openIds.includes(id)) setOpenIds([...openIds, id]);
+    dispatch({ type: 'SET_ACTIVE_ID', payload: id });
+    if (!openIds.includes(id)) dispatch({ type: 'SET_OPEN_IDS', payload: [...openIds, id] });
   }
   // 更换Tab项
   const changeItem = (id) => {
-    setActiveId(id);
+    dispatch({ type: 'SET_ACTIVE_ID', payload: id });
   }
   // 关闭Tab项
   const closeFile = (id) => {
-    const resIds = openIds.filter(i => i !== id)
-    setOpenIds(resIds);
+    const resIds = openIds.filter(i => i !== id);
+    dispatch({ type: 'SET_OPEN_IDS', payload: resIds });
     if (resIds.length > 0 && activeId === id) {
-      setActiveId(resIds[0]);
+      dispatch({ type: 'SET_ACTIVE_ID', payload: resIds[0] });
     } else if (resIds.length > 0 && activeId !== id) {
-      setActiveId(activeId);
+      dispatch({ type: 'SET_ACTIVE_ID', payload: activeId });
     } else {
-      setActiveId('');
+      dispatch({ type: 'SET_ACTIVE_ID', payload: '' });
     }
   }
   // 编辑文件
   const changeFile = (id, newValue) => {
     if (!unSaveIds.includes(id)) {
-      setUnSaveIds([...unSaveIds, id]);
+      dispatch({ type: 'SET_UNSAVE_IDS', payload: [...unSaveIds, id] });
     }
-    // const newFiles = files.map(file => {
-    //   if (file.id === id) {
-    //     file.body = newValue;
-    //   }
-    //   return file;
-    // });
-    // setFiles(newFiles);
     const newFile = { ...files[id], body: newValue };
-    setFiles({ ...files, [id]: newFile });
+    dispatch({ type: 'SET_FILES', payload: { ...files, [id]: newFile } });
   }
   // 删除文件
   const deleteFile = (id) => {
-    // const newFiles = files.filter(file => file.id !== id);
-    // 改变对原来files对象的引用，引发React更新
     const newFiles = { ...files };
     delete newFiles[id];
-    setFiles(newFiles);
+    dispatch({ type: 'SET_FILES', payload: newFiles });
 
     if (openIds.includes(id)) closeFile(id);
   }
@@ -134,25 +127,16 @@ function App() {
 
       // 只有当搜索结果不同时才更新状态
       if (JSON.stringify(filteredFiles) !== JSON.stringify(searchFiles)) {
-        setSearchFiles(filteredFiles);
+        dispatch({ type: 'SET_SEARCH_FILES', payload: filteredFiles });
       }
     }else{
-      setSearchFiles([]);
+      dispatch({ type: 'SET_SEARCH_FILES', payload: [] });
     }
   }
   // 编辑文件名
   const reName = (id, value) => {
-    // const newFiles = files.map(file => {
-    //   if (file.id === id) {
-    //     file.title = value;
-    //     file.isNew = false;
-    //   }
-    //   return file;
-    // });
-
-    // setFiles(newFiles);
     const newFile = { ...files[id], title: value, isNew: false };
-    setFiles({ ...files, [id]: newFile });
+    dispatch({ type: 'SET_FILES', payload: { ...files, [id]: newFile } });
   }
   // 新建文件信息
   const createFile = () => {
@@ -167,8 +151,8 @@ function App() {
         createTime: new Date().getTime()
       };
 
-      setIsNew(true);
-      setFiles({ ...files, [newId]: newFile });
+      dispatch({ type: 'SET_IS_NEW', payload: true });
+      dispatch({ type: 'SET_FILES', payload: { ...files, [newId]: newFile } });
     }
   }
   const clearState = (isDel) => {
@@ -176,7 +160,7 @@ function App() {
       const newFile = Map2Arr(files).find(file => file.isNew);
       if (newFile) deleteFile(newFile.id);
     }
-    setIsNew(false);
+    dispatch({ type: 'SET_IS_NEW', payload: false });
   }
 
   return (
