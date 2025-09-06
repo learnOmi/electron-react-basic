@@ -9,6 +9,17 @@ const Map2Arr = (map) => {
     return Object.keys(map).map(id => map[id]);
 }
 
+const getParentNode = (node, parentClass) => {
+    let cur = node;
+    while(cur){
+        if(cur.classList.contains(parentClass)){
+            return cur;
+        }
+        cur = cur.parentNode;
+    }
+    return false;
+}
+
 // 渲染进程需要使用preload.js中暴露的api
 const readFile = (path) => window.electronAPI.readFile(path);
 
@@ -31,4 +42,4 @@ const pathDirname = (filePath) => window.electronAPI.pathDirname(filePath);
 
 const pathExtname = (filePath) => window.electronAPI.pathExtname(filePath);
 
-export { Arr2Map, Map2Arr, readFile, writeFile, renameFile, deleteFile, getDocumentsPath, pathJoin, pathBasename, pathDirname, pathExtname };
+export { Arr2Map, Map2Arr, readFile, writeFile, renameFile, deleteFile, getDocumentsPath, pathJoin, pathBasename, pathDirname, pathExtname , getParentNode};

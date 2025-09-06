@@ -17,4 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeStore: (key, value) => ipcRenderer.invoke('store-set', key, value),
   deleteStore: (key) => ipcRenderer.invoke('store-delete', key),
   clearStore: () => ipcRenderer.invoke('store-clear'),
+  openContextMenu: (options) => {
+    return ipcRenderer.invoke('context-menu', options)
+  },
 });

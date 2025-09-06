@@ -4,9 +4,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileAlt, faEdit, faTrashAlt, faClose } from '@fortawesome/free-solid-svg-icons';
 import { z } from 'zod';
 import useKeyHandler from '../hooks/useKeyHandler';
+import useContextMenu from '../hooks/useContextMenu';
+import { getParentNode } from '../utils/helper'
 
 const GroupUI = styled.ul.attrs({
-    className: 'list-group list-group-flush'
+    className: 'list-group list-group-flush menu-box'
 })`
     li{
         color: #fff;
@@ -28,10 +30,30 @@ export default function FileList(props) {
     const [value, setValue] = useState('');
     const enterKeyPressed = useKeyHandler(13);
     const escKeyPressed = useKeyHandler(27);
+
+    const curEle = useContextMenu([
+        {
+            id: 'rename',
+            label: "重命名",
+            click: () => {
+                let resNode = getParentNode(curEle.current, 'menu-item');
+                setEditItem(resNode.dataset.id);
+            }
+        },
+        {
+            id: 'delete',
+            label: "删除",
+            click: () => {
+                let resNode = getParentNode(curEle.current, 'menu-item');
+                deleteFile(resNode.dataset.id);
+            }
+        }
+    ], 'menu-box');
+
     const closeFn = (isEsc = false) => {
         setEditItem(false);
         setValue('');
-        
+
         const currentFile = fileList.find(file => file.id === editItem);
         if (currentFile && currentFile.isNew && isEsc) {
             deleteFile(editItem);
@@ -94,7 +116,10 @@ export default function FileList(props) {
                         )
                     } else {
                         return (
-                            <li key={item.id} className='list-group-item d-flex align-items-center'>
+                            <li key={item.id} className='list-group-item d-flex align-items-center menu-item'
+                                data-id={item.id}
+                                data-title={item.title}
+                            >
                                 <span className='mr-2'><FontAwesomeIcon icon={faFileAlt}></FontAwesomeIcon></span>
                                 <span className='col-8' onClick={() => { editFile(item.id); closeFn() }}>{item.title}</span>
                                 <span className='col-2' onClick={() => { setEditItem(item.id) }}><FontAwesomeIcon icon={faEdit}></FontAwesomeIcon></span>

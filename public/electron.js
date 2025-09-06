@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
@@ -23,10 +23,10 @@ function createWindow() {
   });
 
   // 加载应用
-  const startUrl = isDev 
-    ? 'http://localhost:3000' 
+  const startUrl = isDev
+    ? 'http://localhost:3000'
     : `file://${path.join(__dirname, '../build/index.html')}`;
-  
+
   mainWindow.loadURL(startUrl);
 
   if (isDev) {
@@ -39,7 +39,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-    // 注册 IPC 处理器
+  // 注册 IPC 处理器
   ipcMain.handle('get-path', (event, pathName) => {
     return app.getPath(pathName); // 返回指定路径
   });
@@ -102,6 +102,26 @@ app.whenReady().then(() => {
   ipcMain.handle('store-clear', () => {
     store.clear();
   });
+
+  // electron.js - 修改上下文菜单处理
+  ipcMain.handle('context-menu', async (event, options) => {
+    return new Promise((resolve) => {
+      let clickedItemId = null;
+
+      const menu = Menu.buildFromTemplate(
+        options.map(item => ({
+          label: item.label,
+          click: () => {
+            clickedItemId = item.id || null;
+            resolve(clickedItemId);
+          }
+        }))
+      );
+
+      menu.popup({ window: mainWindow });
+    });
+  });
+
 
   createWindow();
 });
