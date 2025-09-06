@@ -11,9 +11,10 @@ import TabList from './components/TabList';
 import "easymde/dist/easymde.min.css";
 import SimpleMdeReact from 'react-simplemde-editor';
 import { v4 } from 'uuid';
-import { Arr2Map, Map2Arr, getDocumentsPath, writeFile, pathJoin, renameFile, deleteFile as deleteLFile, readFile } from './utils/helper';
+import { Arr2Map, Map2Arr, getDocumentsPath, writeFile, pathJoin, renameFile, deleteFile as deleteLFile, readFile, pathBasename, pathDirname } from './utils/helper';
 import { setFiles2store, getFilesFromStore, deleteFileFromStore } from './utils/electronStore';
-
+import { file } from 'zod';
+import { id } from 'zod/locales';
 
 // const mockList = [
 //   { id: '1', title: 'file1', body: 'nihao', createTime: '132121' },
@@ -148,7 +149,7 @@ function App() {
   const deleteFile = async (id) => {
     const file = files[id];
     if (!file.isNew) {
-      const path = await pathJoin(savePath, `${files[id].title}.md`);
+      const path = await pathJoin(file.path);
       deleteLFile(path).then(() => {
         const newFiles = { ...files };
         delete newFiles[id];
@@ -158,6 +159,8 @@ function App() {
         if (openIds.includes(id)) closeFile(id);
       });
     }
+
+    // 新建可能未完成时
     const newFiles = { ...files };
     delete newFiles[id];
     dispatch({ type: 'SET_FILES', payload: newFiles });
@@ -187,7 +190,8 @@ function App() {
     try {
       if (!value) return;
       // 避免文件名重复
-      if (Map2Arr(files).find(file => file.title === value && file.id !== id)) {
+      const item = Map2Arr(files).find(file => file.title === value && file.id !== id);
+      if (item) {
         value += "_copy";
       }
 
@@ -200,7 +204,8 @@ function App() {
         await writeFile(newPath, newFile.body);
       } else {
         // 重命名现有文件
-        const oldPath = await pathJoin(savePath, `${files[id].title}.md`);
+        const newPath = await pathJoin(pathDirname(files[id].path), `${value}.md`)
+        const oldPath = files[id].path;
 
         // 只有当文件名改变时才执行重命名
         if (oldPath !== newPath && newPath) {
@@ -209,7 +214,7 @@ function App() {
       }
 
       // 统一更新状态
-      dispatch({ type: 'SET_FILES', payload: newFiles});
+      dispatch({ type: 'SET_FILES', payload: newFiles });
       setFiles2store(newFiles);
 
     } catch (error) {
@@ -235,6 +240,59 @@ function App() {
     }
   }
 
+  const importFile = async () => {
+    const result = await window.electronAPI.openDialog({
+      title: '选择md文件',
+      buttonLabel: '导入',
+      defaultPath: savePath,
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'Others', extensions: ['txt', 'js', 'json'] },
+        { name: 'md文档', extensions: ['md'] },
+      ],
+    });
+
+    const paths = result.filePaths;
+    if (!result.canceled && paths.length > 0) {
+      const validPaths = paths.filter(path => {
+        return !Map2Arr(files).find(file => file.path === path);
+      });
+      if (validPaths.length === 0) {
+        await window.electronAPI.openMessageBox({
+          title: '提示',
+          type: 'warning',
+          message: '已导入的文件已存在',
+          buttons: ['确定']
+        });
+        return;
+      }
+
+      // 组装数据
+      // 使用 Promise.all 确保所有异步操作完成后再调用 Arr2Map
+      const addFiles = Arr2Map(await Promise.all(validPaths.map(async path => {
+        const title = await pathBasename(path, '.md');
+        return {
+          id: v4(),
+          title,
+          path
+        };
+      })));
+
+      const newFiles = { ...files, ...addFiles };
+      // 更新本地状态
+      dispatch({ type: 'SET_FILES', payload: newFiles });
+      // 保存到 electron-store
+      setFiles2store(newFiles);
+
+      window.electronAPI.openMessageBox({
+        title: '提示',
+        type: 'info',
+        message: '导入成功',
+        buttons: ['确定']
+      });
+    }
+  };
+
   const clearState = (isDel) => {
     if (isNew && isDel) {
       const newFile = Map2Arr(files).find(file => file.isNew);
@@ -245,8 +303,8 @@ function App() {
 
   // 保存正在编辑的文件
   const saveCurrentFiles = async () => {
-    if(!activeFile) return;
-    const path = await pathJoin(savePath, `${activeFile.title}.md`);
+    if (!activeFile) return;
+    const path = await pathJoin(activeFile.path);
     writeFile(path, activeFile.body).then(() => {
       dispatch({
         type: 'SET_UNSAVE_IDS',
@@ -263,7 +321,7 @@ function App() {
           <FileList fileList={fileList} editFile={openItem} saveFile={(id, value, isCreateNew) => { saveData(id, value, isCreateNew) }} deleteFile={deleteFile} clearState={clearState}></FileList>
           <div className='btn_list'>
             <ButtonItem title={'新建'} icon={faPlus} btnClick={createFile} />
-            <ButtonItem title={'导入'} icon={faFileImport} />
+            <ButtonItem title={'导入'} icon={faFileImport} btnClick={importFile} />
           </div>
         </LeftDiv>
         <RightDiv>

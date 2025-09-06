@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
@@ -48,6 +48,15 @@ app.whenReady().then(() => {
     return path.join(...args); // 使用 path.join 拼接路径
   });
 
+  // 处理 dialog 模块的调用
+  ipcMain.handle('dialog-open', async (event, options) => {
+    return await dialog.showOpenDialog(mainWindow, options);
+  });
+
+  ipcMain.handle('dialog-message-box', async (event, options) => {
+    return await dialog.showMessageBox(mainWindow, options);
+  });
+
   ipcMain.handle('path-basename', (event, filePath) => {
     return path.basename(filePath); // 获取文件名
   });
@@ -60,6 +69,7 @@ app.whenReady().then(() => {
     return path.extname(filePath); // 获取扩展名
   });
 
+  // 文件操作处理器
   ipcMain.handle('read-file', (event, path) => {
     return fs.readFileSync(path, 'utf-8');
   });

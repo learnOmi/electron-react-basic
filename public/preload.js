@@ -2,6 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // 通过 contextBridge 向渲染进程暴露安全的 API
 contextBridge.exposeInMainWorld('electronAPI', {
+  openDialog: (options) => ipcRenderer.invoke('dialog-open', options),
+  openMessageBox: (options) => ipcRenderer.invoke('dialog-message-box', options),
   getPath: (pathName) => ipcRenderer.invoke('get-path', pathName),
   pathJoin: (...args) => ipcRenderer.invoke('path-join', ...args),
   pathBasename: (filePath) => ipcRenderer.invoke('path-basename', filePath),
