@@ -20,4 +20,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openContextMenu: (options) => {
     return ipcRenderer.invoke('context-menu', options)
   },
+  listenOn: (event, callback) => ipcRenderer.on(event, callback),
+  removeListen: (event, callback) => ipcRenderer.removeListener(event, callback),
 });

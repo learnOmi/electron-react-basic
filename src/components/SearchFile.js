@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { z } from 'zod';
 import useKeyHandler from '../hooks/useKeyHandler';
+import useIpcRender from '../hooks/useIpcRender';
 
 const SearchFilePropsSchema = z.object({
     title: z.string().default('文档'),
@@ -74,6 +75,10 @@ export default function SearchFile(props) {
             inputRef.current.focus();
         }
     });
+
+    useIpcRender(
+        {'execute-search-file': openSearch}
+    );
 
     return (
         <Fragment>

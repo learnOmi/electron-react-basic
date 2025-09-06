@@ -5,6 +5,7 @@ const isDev = require('electron-is-dev');
 const Store = require('electron-store');
 // 注意store版本区别
 const store = new Store();
+const menuTemp = require('../src/temp/menuTemp');
 
 
 let mainWindow;
@@ -28,6 +29,8 @@ function createWindow() {
     : `file://${path.join(__dirname, '../build/index.html')}`;
 
   mainWindow.loadURL(startUrl);
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemp));
 
   if (isDev) {
     mainWindow.webContents.openDevTools();

@@ -13,8 +13,7 @@ import SimpleMdeReact from 'react-simplemde-editor';
 import { v4 } from 'uuid';
 import { Arr2Map, Map2Arr, getDocumentsPath, writeFile, pathJoin, renameFile, deleteFile as deleteLFile, readFile, pathBasename, pathDirname } from './utils/helper';
 import { setFiles2store, getFilesFromStore, deleteFileFromStore } from './utils/electronStore';
-import { file } from 'zod';
-import { id } from 'zod/locales';
+import useIpcRender from './hooks/useIpcRender';
 
 // const mockList = [
 //   { id: '1', title: 'file1', body: 'nihao', createTime: '132121' },
@@ -100,7 +99,6 @@ function App() {
         .then(data => {
           const newFile = { ...file, body: data, isLoaded: true };
           dispatch({ type: 'SET_FILES', payload: { ...files, [id]: newFile } });
-          if (!openIds.includes(id)) dispatch({ type: 'SET_OPEN_IDS', payload: [...openIds, id] });
         })
         .catch(error => {
           console.error('文件读取失败:', error);
@@ -120,6 +118,8 @@ function App() {
           }
         });
     }
+    if (!openIds.includes(id)) dispatch({ type: 'SET_OPEN_IDS', payload: [...openIds, id] });
+
   }
   // 更换Tab项
   const changeItem = (id) => {
@@ -313,6 +313,12 @@ function App() {
     })
   }
 
+  useIpcRender({
+    'execute-create-file': createFile,
+    'execute-save-file': saveCurrentFiles,
+    'execute-import-file': importFile,
+  });
+
   return (
     <div className='App container-fulid px-0'>
       <div className='row no-gutters'>
@@ -325,7 +331,7 @@ function App() {
           </div>
         </LeftDiv>
         <RightDiv>
-          <button onClick={saveCurrentFiles}>保存</button>
+          {/* <button onClick={saveCurrentFiles}>保存</button> */}
           {
             activeFile &&
             <>
